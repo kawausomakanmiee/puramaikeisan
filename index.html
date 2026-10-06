@@ -1,0 +1,972 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>正負の計算バトル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@500&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap">
+<style>
+/* Layout: one phone-width column. The only identity is sign colour: orange = plus, blue = minus, everywhere (numbers, answer box, number line). */
+:root {
+  --bg: #EEF1F7;
+  --card: #FFFFFF;
+  --ink: #172033;
+  --muted: #5B677F;
+  --line: #D6DCE8;
+  --soft: #E2E8F3;
+  --plus: #C4510C;
+  --minus: #2A62D6;
+  --ok: #0E8A5F;
+  --bad: #BE2B63;
+  --btn: #172033;
+  --btn-ink: #FFFFFF;
+  --plus-bg: #FCE9DB;
+  --minus-bg: #E3ECFD;
+  --ok-bg: #DDF3EA;
+  --bad-bg: #FBE3EC;
+  --font-ui: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+  --font-num: "DM Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10141C;
+    --card: #192030;
+    --ink: #E9EDF5;
+    --muted: #98A3BA;
+    --line: #2A3347;
+    --soft: #232C40;
+    --plus: #FF9B5C;
+    --minus: #7DAAFF;
+    --ok: #3DD69A;
+    --bad: #FF7AA6;
+    --btn: #E9EDF5;
+    --btn-ink: #10141C;
+    --plus-bg: #3A281B;
+    --minus-bg: #1C2A48;
+    --ok-bg: #17382C;
+    --bad-bg: #3A1F2E;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10141C;
+  --card: #192030;
+  --ink: #E9EDF5;
+  --muted: #98A3BA;
+  --line: #2A3347;
+  --soft: #232C40;
+  --plus: #FF9B5C;
+  --minus: #7DAAFF;
+  --ok: #3DD69A;
+  --bad: #FF7AA6;
+  --btn: #E9EDF5;
+  --btn-ink: #10141C;
+  --plus-bg: #3A281B;
+  --minus-bg: #1C2A48;
+  --ok-bg: #17382C;
+  --bad-bg: #3A1F2E;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.5;
+  padding-block: 16px 28px;
+  padding-inline: 16px;
+}
+.app { max-width: 440px; margin-inline: auto; }
+.screen { display: flex; flex-direction: column; gap: 14px; }
+h1, h2, h3, p { margin: 0; }
+button {
+  font: inherit; color: inherit; cursor: pointer; border: 0; background: none; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+button:focus-visible { outline: 3px solid var(--minus); outline-offset: 2px; }
+button:disabled { cursor: default; }
+
+.neg { color: var(--minus); }
+.pos { color: var(--plus); }
+.op { color: var(--muted); }
+.op.pos { color: var(--plus); }
+.op.neg { color: var(--minus); }
+.plain { color: var(--ink); }
+
+.btn {
+  display: block; width: 100%; min-height: 52px; padding: 12px 16px;
+  border-radius: 14px; background: var(--btn); color: var(--btn-ink);
+  font-weight: 700; font-size: 1.05rem;
+}
+.btn.alt { background: var(--card); color: var(--ink); border: 1.5px solid var(--line); }
+.btn:active { transform: scale(.98); }
+.btn-ghost {
+  min-height: 40px; padding: 6px 12px; border-radius: 10px;
+  background: var(--card); border: 1.5px solid var(--line);
+  color: var(--muted); font-weight: 700; font-size: .9rem; white-space: nowrap;
+}
+.label { margin-bottom: 6px; font-size: .75rem; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+
+/* ---------- Home ---------- */
+.home-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.home-head > div { min-width: 0; }
+h1 { font-size: 1.7rem; font-weight: 900; line-height: 1.25; text-wrap: balance; }
+.tag { margin-top: 4px; color: var(--muted); font-size: .9rem; }
+.strip { display: flex; align-items: flex-end; padding-block: 2px; }
+.strip span {
+  flex: 1; min-width: 0; text-align: center; font: 500 .8rem var(--font-num);
+  padding-block-end: 6px; border-bottom: 3px solid;
+}
+.strip .n { color: var(--minus); border-color: var(--minus); }
+.strip .p { color: var(--plus); border-color: var(--plus); }
+.strip .z { color: var(--ink); border-color: var(--ink); font-size: 1.05rem; }
+
+.seg {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px;
+  padding: 4px; background: var(--soft); border-radius: 14px;
+}
+.seg button {
+  min-height: 48px; padding: 6px 4px; border-radius: 11px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .9rem; line-height: 1.25;
+}
+.seg button small { font: 500 .7rem var(--font-num); color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--btn); color: var(--btn-ink); }
+.seg button[aria-pressed="true"] small { color: inherit; opacity: .8; }
+.hint { margin: 6px 2px 0; font-size: .8rem; color: var(--muted); }
+
+.modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.mode {
+  min-height: 112px; padding: 14px; border-radius: 18px; text-align: left;
+  background: var(--card); border: 1.5px solid var(--line);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.mode:active { transform: scale(.98); }
+.mode-eg { font-weight: 900; font-size: 1.1rem; white-space: nowrap; }
+.mode-name { margin-top: auto; font-weight: 700; }
+.mode-best { font: 500 .75rem var(--font-num); color: var(--muted); }
+
+.review {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  width: 100%; min-height: 60px; padding: 12px 16px; border-radius: 16px; text-align: left;
+  background: var(--card); border: 1.5px dashed var(--line);
+}
+.review:not(:disabled) { border-style: solid; border-color: var(--bad); }
+.review:disabled { color: var(--muted); }
+.rv-title { display: block; font-weight: 700; }
+.rv-sub { display: block; font-size: .8rem; color: var(--muted); }
+.rv-count {
+  flex: none; padding: 4px 12px; border-radius: 999px; font: 500 1rem var(--font-num);
+  background: var(--bad-bg); color: var(--bad);
+}
+.review:disabled .rv-count { background: var(--soft); color: var(--muted); }
+
+/* ---------- Play ---------- */
+.pl-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pl-mode { flex: 1; min-width: 0; text-align: center; font-weight: 700; font-size: .9rem; color: var(--muted); }
+.pl-score { white-space: nowrap; font-size: .8rem; color: var(--muted); }
+.pl-score b { font: 500 1.35rem var(--font-num); color: var(--ink); }
+.pl-meter { display: flex; align-items: center; gap: 10px; }
+.bar { flex: 1; height: 10px; border-radius: 999px; background: var(--soft); overflow: hidden; }
+.bar-fill { height: 100%; width: 100%; border-radius: 999px; background: var(--ok); transition: width .1s linear; }
+.bar.low .bar-fill { background: var(--bad); }
+.bar-label { width: 4.6em; font: 500 .85rem var(--font-num); color: var(--muted); text-align: right; }
+.combo {
+  padding: 2px 10px; border-radius: 999px; background: var(--soft); color: var(--muted);
+  font-size: .8rem; font-weight: 700; white-space: nowrap;
+}
+.combo.hot { background: var(--plus-bg); color: var(--plus); }
+
+.problem {
+  padding: 24px 12px; border-radius: 20px; text-align: center;
+  background: var(--card); border: 1.5px solid var(--line);
+  font-weight: 900; font-size: clamp(1.7rem, 8vw, 2.4rem); line-height: 1.3; text-wrap: balance;
+  font-variant-numeric: tabular-nums;
+}
+.problem.flash-ok { animation: flash .5s ease-out; }
+@keyframes flash { from { background: var(--ok-bg); } to { background: var(--card); } }
+
+.answer {
+  min-height: 64px; display: flex; align-items: center; justify-content: center;
+  border-radius: 16px; background: var(--card); border: 2px solid var(--line);
+  font: 500 2.2rem var(--font-num);
+}
+.answer.empty { color: var(--muted); }
+.answer.neg { border-color: var(--minus); }
+.answer.pos { border-color: var(--plus); }
+.feedback { min-height: 1.6rem; text-align: center; font-weight: 700; }
+.feedback.ok { color: var(--ok); }
+.feedback.note { color: var(--muted); font-weight: 500; }
+
+.pad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.pad button {
+  min-height: 54px; border-radius: 14px; background: var(--card); border: 1.5px solid var(--line);
+  font: 500 1.35rem var(--font-num);
+}
+.pad button:active { transform: scale(.96); }
+.pad .k-fn { background: var(--soft); }
+.pad .k-zero { grid-column: 1 / 4; }
+.pad .k-go {
+  grid-column: 4; grid-row: 3 / 5; border: 0; background: var(--btn); color: var(--btn-ink);
+  font: 700 1rem var(--font-ui);
+}
+.link {
+  display: block; margin: 10px auto 0; padding: 8px 12px; min-height: 40px;
+  color: var(--muted); font-size: .85rem; text-decoration: underline;
+}
+
+.explain {
+  display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 18px;
+  background: var(--card); border: 1.5px solid var(--line);
+}
+.ex-tag {
+  align-self: flex-start; padding: 2px 10px; border-radius: 999px;
+  background: var(--bad-bg); color: var(--bad); font-size: .8rem; font-weight: 700;
+}
+.ex-head { font-weight: 900; font-size: 1.15rem; }
+.ex-head b { font: 500 1.6rem var(--font-num); color: var(--ok); }
+.ex-yours { font-size: .9rem; color: var(--muted); }
+.ex-steps { margin: 0; padding-left: 1.3rem; display: flex; flex-direction: column; gap: 6px; font-size: .95rem; }
+.ex-paused { font-size: .78rem; color: var(--muted); }
+
+.nl { display: block; width: 100%; height: auto; }
+.nl-axis { stroke: var(--muted); stroke-width: 2; }
+.nl-tick { stroke: var(--muted); stroke-width: 1.5; }
+.nl-tick.zero { stroke: var(--ink); stroke-width: 2.5; }
+.nl-label { fill: var(--muted); font: 500 10px var(--font-num); }
+.nl-label.zero { fill: var(--ink); }
+.nl-arc { fill: none; stroke-width: 3; stroke-linecap: round; }
+.nl-arc.pos { stroke: var(--plus); }
+.nl-arc.neg { stroke: var(--minus); }
+.nl-head.pos { fill: var(--plus); }
+.nl-head.neg { fill: var(--minus); }
+.nl-start { fill: var(--ink); }
+.nl-end { fill: var(--ok); }
+.nl-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .78rem; color: var(--muted); }
+.nl-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 50%; }
+.nl-legend .s { background: var(--ink); }
+.nl-legend .g { background: var(--ok); }
+
+/* ---------- Result ---------- */
+.res-box {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 24px 16px;
+  border-radius: 20px; background: var(--card); border: 1.5px solid var(--line); text-align: center;
+}
+.res-title { font-weight: 900; font-size: 1.3rem; }
+.res-score { font: 500 3.4rem/1.1 var(--font-num); }
+.res-new { padding: 2px 12px; border-radius: 999px; background: var(--plus-bg); color: var(--plus); font-size: .8rem; font-weight: 700; }
+.res-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; margin-top: 12px; }
+.res-stats div { padding: 8px 4px; border-radius: 12px; background: var(--soft); }
+.res-stats small { display: block; font-size: .72rem; color: var(--muted); }
+.res-stats b { font: 500 1.15rem var(--font-num); }
+.miss { padding: 16px; border-radius: 18px; background: var(--card); border: 1.5px solid var(--line); }
+.miss h2 { margin-bottom: 8px; font-size: 1rem; font-weight: 900; }
+.miss ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.miss li { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+.miss li span { min-width: 0; overflow-wrap: anywhere; }
+.miss li b { font: 500 1rem var(--font-num); white-space: nowrap; }
+.miss p { margin-top: 10px; font-size: .8rem; color: var(--muted); }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------- Rules ---------- */
+.rule { padding: 16px; border-radius: 18px; background: var(--card); border: 1.5px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.rule h2 { font-size: 1.05rem; font-weight: 900; }
+.rule p { font-size: .92rem; }
+.rule .eg { font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.chip { padding: 10px 6px; border-radius: 12px; text-align: center; font-weight: 700; font-size: .9rem; }
+.chip.p { background: var(--plus-bg); color: var(--plus); }
+.chip.n { background: var(--minus-bg); color: var(--minus); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="app">
+
+  <!-- Home -->
+  <section id="s-home" class="screen">
+    <header class="home-head">
+      <div>
+        <h1>正負の計算バトル</h1>
+        <p class="tag">プラスとマイナスに強くなる、くり返し特訓</p>
+      </div>
+      <button class="btn-ghost" id="to-rules" type="button">ルール</button>
+    </header>
+
+    <div class="strip" id="strip" aria-hidden="true"></div>
+
+    <div>
+      <h2 class="label">むずかしさ</h2>
+      <div class="seg" id="seg-level" role="group" aria-label="むずかしさ">
+        <button type="button" data-level="easy">やさしい<small>−5〜5</small></button>
+        <button type="button" data-level="normal">ふつう<small>−9〜9</small></button>
+        <button type="button" data-level="hard">むずかしい<small>−20〜20</small></button>
+      </div>
+    </div>
+
+    <div>
+      <h2 class="label">あそびかた</h2>
+      <div class="seg" id="seg-style" role="group" aria-label="あそびかた">
+        <button type="button" data-style="time">30秒チャレンジ</button>
+        <button type="button" data-style="slow">10問じっくり</button>
+      </div>
+      <p class="hint" id="style-hint"></p>
+    </div>
+
+    <div>
+      <h2 class="label">種目をえらぶ</h2>
+      <div class="modes" id="modes"></div>
+    </div>
+
+    <button class="review" id="review-btn" type="button">
+      <span>
+        <span class="rv-title">まちがえた問題を復習</span>
+        <span class="rv-sub" id="rv-sub"></span>
+      </span>
+      <span class="rv-count" id="rv-count">0問</span>
+    </button>
+  </section>
+
+  <!-- Play -->
+  <section id="s-play" class="screen" hidden>
+    <div class="pl-top">
+      <button class="btn-ghost" id="pl-quit" type="button">やめる</button>
+      <span class="pl-mode" id="pl-mode"></span>
+      <span class="pl-score"><small>スコア</small> <b id="pl-score">0</b></span>
+    </div>
+    <div class="pl-meter">
+      <div class="bar" id="bar"><div class="bar-fill" id="bar-fill"></div></div>
+      <span class="bar-label" id="bar-label"></span>
+      <span class="combo" id="combo">連続 0</span>
+    </div>
+    <div class="problem" id="problem" role="img"></div>
+    <div class="answer empty" id="answer" aria-live="polite">？</div>
+    <p class="feedback" id="feedback" aria-live="polite"></p>
+
+    <div id="pad-wrap">
+      <div class="pad" id="pad">
+        <button type="button" data-k="7">7</button>
+        <button type="button" data-k="8">8</button>
+        <button type="button" data-k="9">9</button>
+        <button type="button" data-k="back" class="k-fn" aria-label="1文字消す">⌫</button>
+        <button type="button" data-k="4">4</button>
+        <button type="button" data-k="5">5</button>
+        <button type="button" data-k="6">6</button>
+        <button type="button" data-k="sign" class="k-fn" aria-label="プラスとマイナスを切りかえる">±</button>
+        <button type="button" data-k="1">1</button>
+        <button type="button" data-k="2">2</button>
+        <button type="button" data-k="3">3</button>
+        <button type="button" data-k="go" class="k-go">答える</button>
+        <button type="button" data-k="0" class="k-zero">0</button>
+      </div>
+      <button class="link" id="giveup" type="button">わからない（答えを見る）</button>
+    </div>
+
+    <div class="explain" id="explain" hidden>
+      <span class="ex-tag" id="ex-tag"></span>
+      <p class="ex-head">正解は <b id="ex-ans"></b></p>
+      <p class="ex-yours" id="ex-yours"></p>
+      <ol class="ex-steps" id="ex-steps"></ol>
+      <div id="ex-line"></div>
+      <p class="ex-paused" id="ex-paused">解説を読んでいるあいだ、タイムは止まっています。</p>
+      <button class="btn" id="ex-next" type="button">つぎへ</button>
+    </div>
+  </section>
+
+  <!-- Result -->
+  <section id="s-result" class="screen" hidden>
+    <div class="res-box">
+      <h2 class="res-title" id="res-title"></h2>
+      <div class="res-score" id="res-score">0</div>
+      <span class="res-new" id="res-new" hidden>ベスト更新</span>
+      <div class="res-stats">
+        <div><small>正解</small><b id="res-correct"></b></div>
+        <div><small>最大連続</small><b id="res-combo"></b></div>
+        <div><small id="res-last-label">ベスト</small><b id="res-best"></b></div>
+      </div>
+    </div>
+    <div class="miss" id="res-miss" hidden>
+      <h2>まちがえた問題</h2>
+      <ul id="res-miss-list"></ul>
+      <p>復習モードに入れてあります。くり返して覚えましょう。</p>
+    </div>
+    <div class="stack">
+      <button class="btn" id="res-again" type="button">もう一回あそぶ</button>
+      <button class="btn alt" id="res-review" type="button">まちがえた問題を復習する</button>
+      <button class="btn alt" id="res-home" type="button">ホームにもどる</button>
+    </div>
+  </section>
+
+  <!-- Rules -->
+  <section id="s-rules" class="screen" hidden>
+    <div class="home-head">
+      <h1>計算のルール</h1>
+      <button class="btn-ghost" id="rules-back" type="button">もどる</button>
+    </div>
+
+    <div class="rule">
+      <h2>たし算（＋）</h2>
+      <p>符号がちがうときは、大きいほうから小さいほうをひいて、大きいほうの符号をつける。</p>
+      <p class="eg"><span class="neg">−7</span> + 3 ＝ <span class="neg">−4</span>　（7 − 3 ＝ 4、大きい7はマイナス）</p>
+      <p>同じ符号のときは、数をたして符号はそのまま。</p>
+      <p class="eg">2 + 4 ＝ <span class="pos">6</span></p>
+    </div>
+
+    <div class="rule">
+      <h2>ひき算（−）</h2>
+      <p>「−」は「マイナスの数をたす」と考える。</p>
+      <p class="eg">2 − 5 ＝ 2 + <span class="neg">(−5)</span> ＝ <span class="neg">−3</span></p>
+      <p class="eg"><span class="neg">−3</span> − 4 ＝ <span class="neg">−3</span> + <span class="neg">(−4)</span> ＝ <span class="neg">−7</span></p>
+      <p>マイナスどうしは、数をたして符号はマイナスのまま。</p>
+    </div>
+
+    <div class="rule">
+      <h2>かけ算・わり算</h2>
+      <p>まず数だけ計算して、符号は次の表で決める。</p>
+      <div class="chips">
+        <div class="chip p">＋ と ＋ → ＋</div>
+        <div class="chip p">− と − → ＋</div>
+        <div class="chip n">＋ と − → −</div>
+        <div class="chip n">− と ＋ → −</div>
+      </div>
+      <p>同じ符号なら＋、ちがう符号なら−。</p>
+    </div>
+
+    <div class="rule">
+      <h2>数直線で考える</h2>
+      <p>たすときは右へ、ひくときは左へ。<span class="neg">−3</span> + 5 は、−3から右へ5進んで2。</p>
+      <div id="rules-nl"></div>
+    </div>
+
+    <button class="btn" id="rules-back2" type="button">もどって練習する</button>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var MINUS = '−';
+  var SYM = { add: '+', sub: MINUS, mul: '×', div: '÷' };
+  var LEVELS = { easy: 5, normal: 9, hard: 20 };
+  var MODES = [
+    { id: 'add', name: 'たし算', eg: { a: -3, op: 'add', b: 5 } },
+    { id: 'sub', name: 'ひき算', eg: { a: -2, op: 'sub', b: 4 } },
+    { id: 'muldiv', name: 'かけ算・わり算', eg: { a: -6, op: 'mul', b: -2 } },
+    { id: 'mix', name: 'ミックス', eg: { a: -8, op: 'div', b: 2 } }
+  ];
+  var KEY = 'pnb-save-v1';
+  var TIME_LIMIT = 30;
+  var SLOW_COUNT = 10;
+
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- storage (per-browser convenience only) ---------- */
+  function load() {
+    var base = { best: {}, mistakes: [], prefs: {} };
+    try {
+      var s = JSON.parse(localStorage.getItem(KEY));
+      if (s && typeof s === 'object') {
+        return {
+          best: s.best || {},
+          mistakes: Array.isArray(s.mistakes) ? s.mistakes.map(normalize) : [],
+          prefs: s.prefs || {}
+        };
+      }
+    } catch (e) { /* storage unavailable */ }
+    return base;
+  }
+  var store = load();
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ }
+  }
+
+  var level = LEVELS[store.prefs.level] ? store.prefs.level : 'normal';
+  var style = store.prefs.style === 'slow' ? 'slow' : 'time';
+  var R = null;        // current round
+  var ans = '';        // typed answer, e.g. "-12"
+  var locked = false;  // true while the explanation is open
+
+  /* ---------- helpers ---------- */
+  function rnd(lo, hi) { return Math.floor(Math.random() * (hi - lo + 1)) + lo; }
+  function nz(r) { var n = 0; while (!n) n = rnd(-r, r); return n; }
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = rnd(0, i), t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+  function S(n) { return n < 0 ? MINUS + (-n) : String(n); }
+  function P(n) { return n < 0 ? '(' + MINUS + (-n) + ')' : String(n); }
+  function PS(n) { return '(' + (n < 0 ? MINUS + (-n) : '+' + n) + ')'; }
+  function numHtml(n) {
+    return '<span class="' + (n < 0 ? 'neg' : 'pos') + '">' + (n < 0 ? '(' + MINUS + (-n) + ')' : n) + '</span>';
+  }
+  function isAddSub(p) { return p.op === 'add' || p.op === 'sub'; }
+  /* たし算・ひき算は「−3 + 5」のようにカッコなし。2つ目の数は常に正で、記号が向きを決める */
+  function exprHtml(p) {
+    if (isAddSub(p)) {
+      return '<span class="' + (p.a < 0 ? 'neg' : 'pos') + '">' + S(p.a) + '</span> <span class="op ' +
+        (p.op === 'add' ? 'pos' : 'neg') + '">' + SYM[p.op] + '</span> <span class="plain">' + p.b + '</span>';
+    }
+    return numHtml(p.a) + ' <span class="op">' + SYM[p.op] + '</span> ' + numHtml(p.b);
+  }
+  function exprText(p) {
+    if (isAddSub(p)) return S(p.a) + ' ' + SYM[p.op] + ' ' + p.b;
+    return P(p.a) + ' ' + SYM[p.op] + ' ' + P(p.b);
+  }
+  function normalize(p) {
+    if ((p.op === 'add' || p.op === 'sub') && p.b < 0) {
+      return { op: p.op === 'add' ? 'sub' : 'add', a: p.a, b: -p.b };
+    }
+    return { op: p.op, a: p.a, b: p.b };
+  }
+  function pkey(p) { return p.op + '|' + p.a + '|' + p.b; }
+  function bestKey(mode) { return mode + '|' + level + '|' + style; }
+
+  function solve(p) {
+    if (p.op === 'add') return p.a + p.b;
+    if (p.op === 'sub') return p.a - p.b;
+    if (p.op === 'mul') return p.a * p.b;
+    return p.a / p.b;
+  }
+
+  function makeProblem(op, r) {
+    if (op === 'mul' || op === 'div') r = Math.min(r, 12);
+    if (op === 'div') {
+      var q = nz(r), b = nz(r);
+      return { op: op, a: q * b, b: b };
+    }
+    if (op === 'add' || op === 'sub') return { op: op, a: nz(r), b: rnd(1, r) };
+    return { op: op, a: nz(r), b: nz(r) };
+  }
+
+  function pickOp(mode) {
+    if (mode === 'add' || mode === 'sub') return mode;
+    if (mode === 'muldiv') return Math.random() < 0.5 ? 'mul' : 'div';
+    return ['add', 'sub', 'mul', 'div'][rnd(0, 3)];
+  }
+
+  /* ---------- explanations ---------- */
+  function addSteps(a, b) {
+    var aa = Math.abs(a), bb = Math.abs(b), s = a + b;
+    if ((a < 0) === (b < 0)) {
+      var w = a < 0 ? 'マイナス' : 'プラス';
+      return [
+        'どちらも' + w + '。同じ符号なので、数をたします：' + aa + ' + ' + bb + ' = ' + (aa + bb),
+        '符号はそのまま' + w + 'なので、答えは ' + S(s)
+      ];
+    }
+    if (s === 0) {
+      return ['符号はちがいますが、数が同じ（' + aa + '）です。打ち消し合って 0 になります'];
+    }
+    var hi = Math.max(aa, bb), lo = Math.min(aa, bb), big = aa > bb ? a : b;
+    return [
+      '符号がちがうので、大きいほうから小さいほうをひきます：' + hi + ' − ' + lo + ' = ' + (hi - lo),
+      '数が大きいのは ' + S(big) + ' なので、その符号がついて、答えは ' + S(s)
+    ];
+  }
+
+  function steps(p) {
+    var a = p.a, b = p.b;
+    if (p.op === 'add') return addSteps(a, b);
+    if (p.op === 'sub') {
+      return ['ひき算は「マイナスの数をたす」と考えます',
+        S(a) + ' − ' + b + ' = ' + S(a) + ' + ' + PS(-b)].concat(addSteps(a, -b));
+    }
+    var same = (a < 0) === (b < 0);
+    var sg = function (n) { return n < 0 ? MINUS : '+'; };
+    return [
+      'まず数だけで計算します：' + Math.abs(a) + ' ' + SYM[p.op] + ' ' + Math.abs(b) + ' = ' + Math.abs(p.ans),
+      '符号は（' + sg(a) + '）と（' + sg(b) + '）。' + (same ? '同じ符号なので 答えは ＋' : 'ちがう符号なので 答えは −'),
+      '答えは ' + S(p.ans)
+    ];
+  }
+
+  /* ---------- number line (svg) ---------- */
+  function numberLine(start, delta) {
+    var end = start + delta;
+    var lo = Math.min(start, end, 0) - 1, hi = Math.max(start, end, 0) + 1, span = hi - lo;
+    var W = 340, PAD = 14, Y = 52;
+    var x = function (v) { return +(PAD + (v - lo) / span * (W - 2 * PAD)).toFixed(1); };
+    var step = span <= 14 ? 1 : span <= 30 ? 2 : span <= 70 ? 5 : 10;
+    var g = '<line class="nl-axis" x1="' + PAD + '" x2="' + (W - PAD) + '" y1="' + Y + '" y2="' + Y + '"/>';
+    for (var i = lo; i <= hi; i++) {
+      var lab = (i % step === 0);
+      var z = i === 0 ? ' zero' : '';
+      if (span <= 40 || lab) {
+        g += '<line class="nl-tick' + z + '" x1="' + x(i) + '" x2="' + x(i) + '" y1="' + (Y - 4) + '" y2="' + (Y + 4) + '"/>';
+      }
+      if (lab) {
+        g += '<text class="nl-label' + z + '" x="' + x(i) + '" y="' + (Y + 20) + '" text-anchor="middle">' + (i < 0 ? MINUS + (-i) : i) + '</text>';
+      }
+    }
+    var x1 = x(start), x2 = x(end), dx = Math.abs(x2 - x1);
+    var ay = Y - 9, h = Math.min(34, dx / 2 + 10), cx = (x1 + x2) / 2, cy = ay - h * 1.6;
+    var cls = delta > 0 ? 'pos' : 'neg';
+    var deg = Math.atan2(ay - cy, x2 - cx) * 180 / Math.PI;
+    g += '<path class="nl-arc ' + cls + '" d="M' + x1 + ' ' + ay + ' Q' + cx + ' ' + cy + ' ' + x2 + ' ' + ay + '"/>';
+    g += '<polygon class="nl-head ' + cls + '" points="0,0 -9,-5 -9,5" transform="translate(' + x2 + ' ' + ay + ') rotate(' + deg.toFixed(1) + ')"/>';
+    g += '<circle class="nl-end" cx="' + x2 + '" cy="' + Y + '" r="6.5"/>';
+    g += '<circle class="nl-start" cx="' + x1 + '" cy="' + Y + '" r="4.5"/>';
+    var label = S(start) + ' から' + (delta > 0 ? '右へ' : '左へ') + Math.abs(delta) + '進んで ' + S(end);
+    return '<svg class="nl" viewBox="0 0 ' + W + ' 78" role="img" aria-label="' + label + '">' + g + '</svg>' +
+      '<p class="nl-legend"><span><i class="s"></i>スタート ' + S(start) + '</span><span><i class="g"></i>答え ' + S(end) + '</span><span>' +
+      (delta > 0 ? '＋は右へ' : '−は左へ') + ' ' + Math.abs(delta) + ' 進む</span></p>';
+  }
+
+  /* ---------- screens ---------- */
+  function show(id) {
+    ['s-home', 's-play', 's-result', 's-rules'].forEach(function (s) { $(s).hidden = (s !== id); });
+    window.scrollTo(0, 0);
+  }
+
+  function renderHome() {
+    $('modes').innerHTML = MODES.map(function (m) {
+      var b = store.best[bestKey(m.id)] || 0;
+      return '<button class="mode" type="button" data-mode="' + m.id + '"><span class="mode-eg">' + exprHtml(m.eg) +
+        '</span><span class="mode-name">' + m.name + '</span><span class="mode-best">ベスト ' + b + '</span></button>';
+    }).join('');
+    Array.prototype.forEach.call($('seg-level').children, function (btn) {
+      btn.setAttribute('aria-pressed', String(btn.getAttribute('data-level') === level));
+    });
+    Array.prototype.forEach.call($('seg-style').children, function (btn) {
+      btn.setAttribute('aria-pressed', String(btn.getAttribute('data-style') === style));
+    });
+    $('style-hint').textContent = style === 'time'
+      ? '30秒でどこまで解けるか。まちがえた解説のあいだは時間が止まります。'
+      : '時間なしで10問。1問ずつ確かめながら進めます。';
+    var n = store.mistakes.length;
+    $('rv-count').textContent = n + '問';
+    $('rv-sub').textContent = n ? '最大10問をくり返し練習' : 'まちがえた問題がここにたまります';
+    $('review-btn').disabled = n === 0;
+  }
+
+  function renderStrip() {
+    var h = '';
+    for (var i = -5; i <= 5; i++) {
+      h += '<span class="' + (i < 0 ? 'n' : i > 0 ? 'p' : 'z') + '">' + (i < 0 ? MINUS + (-i) : i) + '</span>';
+    }
+    $('strip').innerHTML = h;
+  }
+
+  /* ---------- round flow ---------- */
+  function startRound(modeId, review) {
+    R = {
+      mode: modeId, review: !!review, timed: !review && style === 'time',
+      total: 0, correct: 0, maxCombo: 0, misses: [], score: 0, combo: 0,
+      cur: null, timeLeft: TIME_LIMIT, paused: false, last: Date.now(), timerId: 0,
+      limit: SLOW_COUNT, queue: []
+    };
+    if (review) {
+      R.queue = shuffle(store.mistakes.slice()).slice(0, 10);
+      R.limit = R.queue.length;
+    }
+    ans = ''; locked = false;
+    $('explain').hidden = true; $('pad-wrap').hidden = false;
+    $('feedback').textContent = '';
+    $('pl-score').textContent = '0';
+    var m = MODES.filter(function (x) { return x.id === modeId; })[0];
+    $('pl-mode').textContent = review ? 'まちがえた問題の復習' : m.name;
+    show('s-play');
+    nextProblem();
+    renderMeter();
+    renderCombo();
+    if (R.timed) R.timerId = setInterval(tick, 100);
+  }
+
+  function tick() {
+    if (!R) return;
+    var now = Date.now(), dt = (now - R.last) / 1000;
+    R.last = now;
+    if (R.paused) return;
+    R.timeLeft = Math.max(0, R.timeLeft - dt);
+    renderMeter();
+    if (R.timeLeft <= 0) endRound();
+  }
+
+  function renderMeter() {
+    var bar = $('bar');
+    if (R.timed) {
+      $('bar-fill').style.width = (R.timeLeft / TIME_LIMIT * 100) + '%';
+      $('bar-label').textContent = '残り ' + Math.ceil(R.timeLeft) + '秒';
+      bar.classList.toggle('low', R.timeLeft <= 5);
+    } else {
+      $('bar-fill').style.width = (R.total / R.limit * 100) + '%';
+      $('bar-label').textContent = Math.min(R.total + 1, R.limit) + ' / ' + R.limit + '問';
+      bar.classList.remove('low');
+    }
+  }
+
+  function renderCombo() {
+    $('combo').textContent = '連続 ' + R.combo;
+    $('combo').classList.toggle('hot', R.combo >= 3);
+  }
+
+  function nextProblem() {
+    var p;
+    if (R.review) {
+      var m = R.queue[R.total];
+      p = { op: m.op, a: m.a, b: m.b };
+    } else {
+      var tries = 0;
+      do { p = makeProblem(pickOp(R.mode), LEVELS[level]); tries++; }
+      while (R.cur && pkey(p) === pkey(R.cur) && tries < 10);
+    }
+    p.ans = solve(p);
+    R.cur = p;
+    ans = '';
+    $('problem').innerHTML = exprHtml(p);
+    $('problem').setAttribute('aria-label', exprText(p));
+    renderAns();
+    renderMeter();
+  }
+
+  function advance() {
+    if (!R.timed && R.total >= R.limit) { endRound(); return; }
+    nextProblem();
+  }
+
+  /* ---------- answer entry ---------- */
+  function renderAns() {
+    var el = $('answer');
+    if (ans === '') {
+      el.textContent = '？';
+      el.className = 'answer empty';
+    } else {
+      el.textContent = ans.replace('-', MINUS);
+      el.className = 'answer ' + (ans.charAt(0) === '-' ? 'neg' : 'pos');
+    }
+  }
+  function pressDigit(d) {
+    if (locked) return;
+    var digits = ans.replace('-', '');
+    if (digits.length >= 4) return;
+    var sign = ans.charAt(0) === '-' ? '-' : '';
+    ans = digits === '0' ? sign + d : ans + d;
+    $('feedback').textContent = '';
+    renderAns();
+  }
+  function setSign(neg) {
+    if (locked) return;
+    var digits = ans.replace('-', '');
+    ans = (neg ? '-' : '') + digits;
+    renderAns();
+  }
+  function toggleSign() { setSign(ans.charAt(0) !== '-'); }
+  function backspace() {
+    if (locked) return;
+    ans = ans.slice(0, -1);
+    renderAns();
+  }
+
+  function flashOk() {
+    var el = $('problem');
+    el.classList.remove('flash-ok');
+    void el.offsetWidth;
+    el.classList.add('flash-ok');
+  }
+
+  function addMistake(p) {
+    var k = pkey(p);
+    var exists = store.mistakes.some(function (m) { return pkey(m) === k; });
+    if (!exists) {
+      store.mistakes.push({ op: p.op, a: p.a, b: p.b });
+      if (store.mistakes.length > 40) store.mistakes.shift();
+    }
+  }
+  function removeMistake(p) {
+    var k = pkey(p);
+    store.mistakes = store.mistakes.filter(function (m) { return pkey(m) !== k; });
+  }
+
+  function submit(giveUp) {
+    if (locked || !R) return;
+    var val = null;
+    if (!giveUp) {
+      if (ans === '' || ans === '-') {
+        $('feedback').className = 'feedback note';
+        $('feedback').textContent = '答えを入れてね';
+        return;
+      }
+      val = parseInt(ans, 10);
+    }
+    var p = R.cur;
+    R.total++;
+    if (!giveUp && val === p.ans) {
+      R.correct++;
+      R.combo++;
+      if (R.combo > R.maxCombo) R.maxCombo = R.combo;
+      var gain = 100 + R.combo * 10;
+      R.score += gain;
+      $('pl-score').textContent = R.score;
+      $('feedback').className = 'feedback ok';
+      $('feedback').textContent = '◯ 正解！ +' + gain;
+      if (R.review) { removeMistake(p); save(); }
+      renderCombo();
+      flashOk();
+      advance();
+    } else {
+      R.combo = 0;
+      renderCombo();
+      R.misses.push({ op: p.op, a: p.a, b: p.b, ans: p.ans });
+      addMistake(p);
+      save();
+      $('feedback').textContent = '';
+      showExplain(val, giveUp);
+    }
+  }
+
+  function showExplain(val, gaveUp) {
+    var p = R.cur;
+    locked = true;
+    R.paused = true;
+    $('pad-wrap').hidden = true;
+    $('explain').hidden = false;
+    $('ex-tag').textContent = gaveUp ? '答えを見てみよう' : 'おしい！ここでおぼえよう';
+    $('ex-ans').textContent = S(p.ans);
+    $('ex-yours').hidden = gaveUp;
+    $('ex-yours').textContent = gaveUp ? '' : 'あなたの答え：' + S(val);
+    $('ex-steps').innerHTML = steps(p).map(function (s) { return '<li>' + s + '</li>'; }).join('');
+    if (p.op === 'add' || p.op === 'sub') {
+      $('ex-line').innerHTML = numberLine(p.a, p.op === 'add' ? p.b : -p.b);
+      $('ex-line').hidden = false;
+    } else {
+      $('ex-line').hidden = true;
+    }
+    $('ex-paused').hidden = !R.timed;
+    var last = !R.timed && R.total >= R.limit;
+    $('ex-next').textContent = last ? 'けっかを見る' : 'つぎへ';
+    $('ex-next').focus();
+  }
+
+  function afterExplain() {
+    if (!locked) return;
+    locked = false;
+    R.paused = false;
+    R.last = Date.now();
+    $('explain').hidden = true;
+    $('pad-wrap').hidden = false;
+    $('feedback').textContent = '';
+    advance();
+  }
+
+  function endRound() {
+    if (!R) return;
+    clearInterval(R.timerId);
+    var r = R;
+    var isBest = false, best = 0;
+    if (!r.review) {
+      var k = bestKey(r.mode);
+      best = store.best[k] || 0;
+      if (r.score > best) { store.best[k] = r.score; best = r.score; isBest = true; }
+      save();
+    }
+    $('res-title').textContent = r.review ? '復習おわり！' : (r.timed ? 'タイムアップ！' : 'おつかれさま！');
+    $('res-score').textContent = r.score;
+    $('res-new').hidden = !isBest;
+    $('res-correct').textContent = r.correct + ' / ' + r.total;
+    $('res-combo').textContent = r.maxCombo;
+    if (r.review) {
+      $('res-last-label').textContent = 'のこり';
+      $('res-best').textContent = store.mistakes.length + '問';
+    } else {
+      $('res-last-label').textContent = 'ベスト';
+      $('res-best').textContent = best;
+    }
+    $('res-miss').hidden = r.misses.length === 0;
+    $('res-miss-list').innerHTML = r.misses.slice(0, 8).map(function (m) {
+      return '<li><span>' + exprText(m) + ' =</span><b>' + S(m.ans) + '</b></li>';
+    }).join('');
+    $('res-review').hidden = store.mistakes.length === 0;
+    $('res-again').textContent = r.review ? (store.mistakes.length ? 'もう一度ふくしゅうする' : 'ホームにもどる') : 'もう一回あそぶ';
+    $('res-again').setAttribute('data-mode', r.mode);
+    $('res-again').setAttribute('data-review', r.review ? '1' : '');
+    locked = false;
+    R = null;
+    show('s-result');
+  }
+
+  function quit() {
+    if (R) clearInterval(R.timerId);
+    R = null; locked = false;
+    renderHome();
+    show('s-home');
+  }
+
+  /* ---------- events ---------- */
+  $('modes').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-mode]');
+    if (b) startRound(b.getAttribute('data-mode'), false);
+  });
+  $('seg-level').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-level]');
+    if (!b) return;
+    level = b.getAttribute('data-level');
+    store.prefs.level = level; save(); renderHome();
+  });
+  $('seg-style').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-style]');
+    if (!b) return;
+    style = b.getAttribute('data-style');
+    store.prefs.style = style; save(); renderHome();
+  });
+  $('review-btn').addEventListener('click', function () {
+    if (store.mistakes.length) startRound('review', true);
+  });
+  $('to-rules').addEventListener('click', function () { show('s-rules'); });
+  $('rules-back').addEventListener('click', function () { renderHome(); show('s-home'); });
+  $('rules-back2').addEventListener('click', function () { renderHome(); show('s-home'); });
+
+  $('pad').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-k]');
+    if (!b) return;
+    var k = b.getAttribute('data-k');
+    if (k === 'go') submit(false);
+    else if (k === 'back') backspace();
+    else if (k === 'sign') toggleSign();
+    else pressDigit(k);
+  });
+  $('giveup').addEventListener('click', function () { submit(true); });
+  $('ex-next').addEventListener('click', afterExplain);
+  $('pl-quit').addEventListener('click', quit);
+
+  $('res-again').addEventListener('click', function () {
+    var review = this.getAttribute('data-review') === '1';
+    if (review) {
+      if (store.mistakes.length) startRound('review', true);
+      else { renderHome(); show('s-home'); }
+    } else {
+      startRound(this.getAttribute('data-mode'), false);
+    }
+  });
+  $('res-review').addEventListener('click', function () {
+    if (store.mistakes.length) startRound('review', true);
+  });
+  $('res-home').addEventListener('click', function () { renderHome(); show('s-home'); });
+
+  document.addEventListener('keydown', function (e) {
+    if (!R || $('s-play').hidden) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (locked) afterExplain(); else submit(false);
+      return;
+    }
+    if (locked) return;
+    if (/^[0-9]$/.test(e.key)) pressDigit(e.key);
+    else if (e.key === '-') setSign(true);
+    else if (e.key === '+') setSign(false);
+    else if (e.key === 'Backspace') { e.preventDefault(); backspace(); }
+  });
+
+  renderStrip();
+  renderHome();
+  $('rules-nl').innerHTML = numberLine(-3, 5);
+})();
+</script>
+
+</body></html>
